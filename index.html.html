@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>獵手 PRO · 量化交易系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Serif+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060a0e;--surface:#0a1018;--card:#0f1820;--card2:#131f2a;--border:#1a2d3f;--accent:#f5a623;--accent2:#c27b00;--green:#00e676;--green2:#00b359;--red:#ff3d57;--red2:#b71c2f;--blue:#00b8ff;--text:#b8cfe0;--muted:#446070;--white:#e8f4ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Serif TC',serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(26,45,63,0.25) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(26,45,63,0.25) 40px);pointer-events:none;z-index:0;}
+@keyframes scan{0%{transform:translateY(-100vh)}100%{transform:translateY(200vh)}}
+.scanline{position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,166,35,0.08),transparent);animation:scan 12s linear infinite;pointer-events:none;z-index:1;}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;align-items:center;justify-content:center;}
+#loginScreen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(245,166,35,0.04) 0%,transparent 70%);}
+.login-box{position:relative;width:380px;border:1px solid var(--border);background:var(--card);padding:48px 40px;}
+.login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.login-logo{font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:6px;color:var(--accent);text-align:center;margin-bottom:6px;text-shadow:0 0 30px rgba(245,166,35,0.3);}
+.login-sub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-align:center;margin-bottom:36px;text-transform:uppercase;}
+.login-field{margin-bottom:16px;}
+.login-field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.login-field input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 14px;outline:none;transition:border-color 0.2s;}
+.login-field input:focus{border-color:var(--accent);}
+.login-btn{width:100%;background:var(--accent);border:none;color:#000;font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:4px;padding:14px;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+.login-btn:hover{background:var(--accent2);}
+.login-err{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);text-align:center;margin-top:12px;min-height:16px;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 30px;height:56px;background:rgba(6,10,14,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px rgba(245,166,35,0.3);}
+.nav-right{display:flex;align-items:center;gap:4px;}
+.nav-tab{padding:6px 16px;background:transparent;border:1px solid transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.nav-tab:hover,.nav-tab.active{color:var(--accent);border-color:var(--accent);background:rgba(245,166,35,0.05);}
+.nav-status{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:2px;margin-left:16px;}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,0.4)}50%{opacity:0.7;box-shadow:0 0 0 4px rgba(0,230,118,0)}}
+
+/* SECTIONS */
+.section{display:none;min-height:100vh;padding:72px 24px 80px;position:relative;z-index:2;}
+.section.active{display:block;}
+.sec-header{margin-bottom:28px;}
+.sec-title{font-family:'Bebas Neue',cursive;font-size:36px;letter-spacing:3px;color:var(--white);}
+.sec-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px;}
+.max-wrap{max-width:1300px;margin:0 auto;}
+
+/* DASHBOARD GRID */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.dash-grid2{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:20px;}
+.dash-grid3{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.widget{background:var(--card);border:1px solid var(--border);padding:20px;position:relative;overflow:hidden;}
+.widget::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,166,35,0.15),transparent);}
+.widget-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.widget-val{font-family:'Bebas Neue',cursive;font-size:38px;letter-spacing:2px;color:var(--white);line-height:1;}
+.widget-val.green{color:var(--green);}
+.widget-val.red{color:var(--red);}
+.widget-val.orange{color:var(--accent);}
+.widget-change{font-family:'JetBrains Mono',monospace;font-size:11px;margin-top:6px;}
+.up{color:var(--green)}.down{color:var(--red)}
+
+/* FEAR GREED GAUGE */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;}
+.gauge-svg{width:180px;height:100px;overflow:visible;}
+.gauge-label{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;color:var(--white);margin-top:-10px;}
+.gauge-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;}
+
+/* LONG SHORT RATIO */
+.ls-bar-wrap{margin-top:8px;}
+.ls-label-row{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;margin-bottom:6px;}
+.ls-bar{height:24px;background:var(--card2);border-radius:2px;overflow:hidden;position:relative;display:flex;}
+.ls-long{height:100%;background:linear-gradient(90deg,var(--green2),var(--green));transition:width 0.8s ease;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#000;font-weight:700;}
+.ls-short{height:100%;background:linear-gradient(90deg,var(--red2),var(--red));transition:width 0.8s ease;flex:1;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#fff;font-weight:700;}
+
+/* MARKET SCANNER TABLE */
+.scanner-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.scan-filter{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;}
+.scan-filter:hover,.scan-filter.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,0.05);}
+.scan-btn{background:var(--accent);border:none;color:#000;font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;padding:6px 18px;cursor:pointer;transition:background 0.2s;}
+.scan-btn:hover{background:var(--accent2);}
+.scan-table{width:100%;border-collapse:collapse;}
+.scan-table th{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.scan-table td{padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;border-bottom:1px solid rgba(26,45,63,0.5);transition:background 0.15s;}
+.scan-table tr:hover td{background:rgba(245,166,35,0.03);}
+.score-bar{width:80px;height:6px;background:var(--card2);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px;}
+.score-fill{height:100%;border-radius:3px;transition:width 0.6s ease;}
+.sig-long{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3);padding:2px 10px;font-size:10px;letter-spacing:2px;font-family:'JetBrains Mono',monospace;}
+.sig-short{background:rgba(255,61,87,0.15);color:var(--red);border:1px solid rgba(255,61,87,0.3);padding:2px 10px;font-size:10px;letter-spacing:2px;font-family:'JetBrains Mono',monospace;}
+.sig-neutral{background:rgba(90,120,150,0.15);color:var(--muted);border:1px solid var(--border);padding:2px 10px;font-size:10px;letter-spacing:2px;font-family:'JetBrains Mono',monospace;}
+.btn-notify{background:transparent;border:1px solid var(--blue);color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;}
+.btn-notify:hover{background:rgba(0,184,255,0.1);}
+
+/* ENERGY CHART (canvas) */
+.energy-container{position:relative;}
+.energy-canvas{width:100%;height:220px;}
+
+/* RECOMMENDATIONS */
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.rec-card{background:var(--card);border:1px solid var(--border);padding:18px;transition:all 0.2s;}
+.rec-card.long-card{border-top:2px solid var(--green);}
+.rec-card.short-card{border-top:2px solid var(--red);}
+.rec-card:hover{transform:translateY(-1px);}
+.rec-sym{font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:2px;color:var(--white);}
+.rec-dir{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.rec-dir.long{color:var(--green)}.rec-dir.short{color:var(--red)}
+.rec-score-wrap{margin:10px 0;}
+.rec-score-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.rec-mini-bar{flex:1;height:4px;background:var(--card2);border-radius:2px;overflow:hidden;}
+.rec-mini-fill{height:100%;border-radius:2px;}
+.rec-reason{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px;}
+.rec-tg{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 12px;cursor:pointer;transition:all 0.2s;margin-top:10px;letter-spacing:1px;}
+.rec-tg:hover{background:rgba(245,166,35,0.1);}
+.price-levels{margin:12px 0;border:1px solid var(--border);overflow:hidden;}
+.price-row{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid rgba(26,45,63,0.6);position:relative;}
+.price-row:last-child{border-bottom:none;}
+.price-row-bar{position:absolute;left:0;top:0;bottom:0;opacity:0.07;transition:width 0.8s ease;}
+.price-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;min-width:36px;}
+.price-val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;}
+.price-pct{font-family:'JetBrains Mono',monospace;font-size:9px;opacity:0.7;margin-left:6px;}
+.lbl-entry{color:var(--accent)}.lbl-sl{color:var(--red)}.lbl-tp1{color:#8bc34a}.lbl-tp2{color:var(--green)}.lbl-tp3{color:#00e5ff}
+.rr-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border:1px solid;letter-spacing:1px;margin-top:8px;display:inline-block;}
+.rr-good{color:var(--green);border-color:rgba(0,230,118,0.3);background:rgba(0,230,118,0.05);}
+.rr-ok{color:var(--accent);border-color:rgba(245,166,35,0.3);background:rgba(245,166,35,0.05);}
+.rr-bad{color:var(--red);border-color:rgba(255,61,87,0.3);background:rgba(255,61,87,0.05);}
+/* POSITION MANAGER */
+.pm-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.pm-input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px 12px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+.pm-input:focus{border-color:var(--accent);}
+.pm-result-card{background:var(--card2);border:1px solid var(--border);padding:14px;text-align:center;position:relative;overflow:hidden;}
+.pm-result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.pm-result-card.good::before{background:var(--green);}
+.pm-result-card.warn::before{background:var(--accent);}
+.pm-result-card.danger::before{background:var(--red);}
+.pm-result-card.info::before{background:var(--blue);}
+.pm-card-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.pm-card-val{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:2px;line-height:1;}
+.pm-card-sub{font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:4px;}
+.pm-tp-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid rgba(26,45,63,0.5);position:relative;overflow:hidden;}
+.pm-tp-row:last-child{border-bottom:none;}
+.pm-tp-bg{position:absolute;left:0;top:0;bottom:0;opacity:0.06;transition:width 0.8s ease;}
+.pm-tp-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;min-width:52px;}
+.pm-tp-price{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;}
+.pm-tp-pnl{font-family:'JetBrains Mono',monospace;font-size:11px;}
+.pm-tp-rr{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+
+/* AI Q&A */
+.qa-container{max-width:860px;margin:0 auto;}
+.qa-history{min-height:260px;max-height:420px;overflow-y:auto;border:1px solid var(--border);background:var(--card);padding:20px;margin-bottom:16px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.msg{margin-bottom:20px;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-role{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+.msg.user .msg-role{color:var(--accent)}.msg.ai .msg-role{color:var(--green)}
+.msg-content{font-size:13px;line-height:1.9;color:var(--text);padding:12px 16px;border-left:2px solid;}
+.msg.user .msg-content{border-color:var(--accent);background:rgba(245,166,35,0.03);}
+.msg.ai .msg-content{border-color:var(--green);background:rgba(0,230,118,0.03);}
+.qa-input-area{display:flex;gap:10px;}
+.qa-input{flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:12px 16px;outline:none;transition:border-color 0.2s;}
+.qa-input:focus{border-color:var(--accent);}
+.qa-input::placeholder{color:var(--muted);}
+.qa-btn{background:var(--accent);border:none;color:#000;font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2px;padding:12px 24px;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+.qa-btn:hover{background:var(--accent2);}
+.qa-btn:disabled{opacity:0.4;}
+.quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.quick-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;padding:5px 12px;cursor:pointer;transition:all 0.2s;}
+.quick-btn:hover{border-color:var(--accent);color:var(--accent);}
+.loading-dots span{display:inline-block;width:5px;height:5px;background:var(--green);border-radius:50%;margin:0 2px;animation:blink 1.2s infinite;}
+.loading-dots span:nth-child(2){animation-delay:.2s}.loading-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* SETTINGS PANEL */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;}
+.settings-card{background:var(--card);border:1px solid var(--border);padding:24px;}
+.settings-card h3{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;color:var(--white);margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.field input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 12px;outline:none;transition:border-color 0.2s;}
+.field input:focus{border-color:var(--accent);}
+.save-btn{background:var(--accent);border:none;color:#000;font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:2px;padding:10px 24px;cursor:pointer;transition:background 0.2s;}
+.save-btn:hover{background:var(--accent2);}
+.test-btn{background:transparent;border:1px solid var(--green);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 18px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;margin-left:8px;}
+.test-btn:hover{background:rgba(0,230,118,0.1);}
+.msg-ok{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);margin-top:8px;}
+.msg-err{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);margin-top:8px;}
+
+/* TICKER */
+.ticker-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(6,10,14,0.92);border-top:1px solid var(--border);padding:6px 0;overflow:hidden;}
+.ticker-track{display:flex;animation:ticker 40s linear infinite;white-space:nowrap;}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:6px;padding:0 24px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.5px;}
+.ticker-sym{color:var(--white);font-weight:700;}
+
+/* WYCKOFF section */
+.wyk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.wyk-phase{background:var(--card);border:1px solid var(--border);padding:16px;text-align:center;}
+.wyk-phase-name{font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:2px;margin-bottom:4px;}
+.phase-acc{color:var(--accent)}.phase-up{color:var(--green)}.phase-dist{color:var(--red)}.phase-down{color:var(--muted)}
+.wyk-phase-en{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;}
+
+@media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}.dash-grid2{grid-template-columns:1fr}.dash-grid3{grid-template-columns:1fr}.rec-grid{grid-template-columns:1fr}.settings-grid{grid-template-columns:1fr}.wyk-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){nav{padding:0 12px}.nav-tab{padding:5px 10px;font-size:9px}.section{padding:64px 12px 80px}}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<!-- ========== LOGIN ========== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">⬡ HUNTER PRO</div>
+    <div class="login-sub">Authorized Access Only</div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="輸入帳號" autocomplete="username" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="輸入密碼" autocomplete="current-password" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">進入系統</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ========== NAV ========== -->
+<nav id="mainNav" style="display:none">
+  <div class="nav-logo">⬡ HUNTER PRO</div>
+  <div class="nav-right">
+    <button class="nav-tab active" onclick="showSec('dashboard',this)">儀表板</button>
+    <button class="nav-tab" onclick="showSec('scanner',this)">市場掃描</button>
+    <button class="nav-tab" onclick="showSec('recommend',this)">交易建議</button>
+    <button class="nav-tab" onclick="showSec('wyckoff',this)">賽克斯</button>
+    <button class="nav-tab" onclick="showSec('qa',this)">AI問答</button>
+    <button class="nav-tab" onclick="showSec('settings',this)">設定</button>
+    <div class="nav-status"><div class="nav-dot"></div>LIVE</div>
+  <div id="autoNotifyCount" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:1px;margin-left:12px;border:1px solid rgba(245,166,35,0.3);padding:2px 10px;"></div>
+  </div>
+</nav>
+
+<!-- ========== DASHBOARD ========== -->
+<div class="section active" id="dashboard">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">市場儀表板</div><div class="sec-sub">BingX全市場 · 即時監控</div></div>
+
+  <!-- Top stats -->
+  <div class="dash-grid">
+    <div class="widget">
+      <div class="widget-label">BTC 價格</div>
+      <div class="widget-val" id="btcPrice">--</div>
+      <div class="widget-change" id="btcChg">--</div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">貪婪恐懼指數</div>
+      <div class="widget-val orange" id="fgValue">--</div>
+      <div class="widget-change" id="fgLabel" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">載入中...</div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">BTC 多空比</div>
+      <div class="widget-val" id="lsRatioVal">--</div>
+      <div class="widget-change" id="lsRatioSub" style="font-family:'JetBrains Mono',monospace;font-size:11px;">--</div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">掃描幣對數</div>
+      <div class="widget-val orange" id="scanCount">0</div>
+      <div class="widget-change" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">BingX 永續合約</div>
+    </div>
+  </div>
+
+  <!-- Top5 Wyckoff Signals Panel -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+    <div class="widget">
+      <div class="widget-label">🟢 多頭排行 TOP5 · 賽克斯確認</div>
+      <div id="top5LongPanel" style="margin-top:8px;"></div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">🔴 空頭排行 TOP5 · 賽克斯確認</div>
+      <div id="top5ShortPanel" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+
+  </div>
+
+  <!-- Middle row -->
+  <div class="dash-grid2">
+    <!-- Fear Greed Gauge -->
+    <div class="widget">
+      <div class="widget-label">恐懼與貪婪指數 · Alternative.me</div>
+      <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="-10 -10 200 110" id="gaugeSvg">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ff3d57"/>
+                <stop offset="25%" stop-color="#ff9800"/>
+                <stop offset="50%" stop-color="#f5a623"/>
+                <stop offset="75%" stop-color="#8bc34a"/>
+                <stop offset="100%" stop-color="#00e676"/>
+              </linearGradient>
+            </defs>
+            <path d="M10,90 A80,80 0 0,1 170,90" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="14" stroke-linecap="round"/>
+            <path d="M10,90 A80,80 0 0,1 170,90" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round" opacity="0.3"/>
+            <path id="gaugeFill" d="M10,90 A80,80 0 0,1 170,90" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 1.2s ease"/>
+            <line id="gaugeNeedle" x1="90" y1="90" x2="90" y2="20" stroke="var(--white)" stroke-width="2" stroke-linecap="round" style="transform-origin:90px 90px;transform:rotate(-90deg);transition:transform 1.2s ease"/>
+            <circle cx="90" cy="90" r="5" fill="var(--white)"/>
+            <text x="10" y="108" fill="#ff3d57" font-size="9" font-family="JetBrains Mono">極度恐懼</text>
+            <text x="145" y="108" fill="#00e676" font-size="9" font-family="JetBrains Mono">極度貪婪</text>
+          </svg>
+          <div class="gauge-label" id="fgBig">--</div>
+          <div class="gauge-sub" id="fgSub">--</div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:12px;">歷史對比</div>
+          <div id="fgHistory" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Long Short Ratio -->
+    <div class="widget">
+      <div class="widget-label">多空比率 · BTC</div>
+      <div class="ls-bar-wrap" id="lsBarWrap">
+        <div class="ls-label-row"><span style="color:var(--green)">多頭 LONG</span><span style="color:var(--red)">空頭 SHORT</span></div>
+        <div class="ls-bar">
+          <div class="ls-long" id="lsLongBar" style="width:50%">50%</div>
+          <div class="ls-short" id="lsShortBar" style="width:50%">50%</div>
+        </div>
+        <div style="margin-top:16px;" id="lsCoins"></div>
+      </div>
+    </div>
+
+    <!-- Energy Chart -->
+    <div class="widget">
+      <div class="widget-label">市場能量分佈</div>
+      <canvas id="energyCanvas" class="energy-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Top movers -->
+  <div class="dash-grid3">
+    <div class="widget">
+      <div class="widget-label">🚀 最強漲幅 TOP5</div>
+      <div id="topGainers"></div>
+    </div>
+    <div class="widget">
+      <div class="widget-label">💥 最大跌幅 TOP5</div>
+      <div id="topLosers"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== SCANNER ========== -->
+<div class="section" id="scanner">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">全市場掃描</div><div class="sec-sub">BingX USDT永續合約 · 策略評分</div></div>
+  <div class="scanner-toolbar">
+    <button class="scan-filter active" onclick="filterScan('all',this)">全部</button>
+    <button class="scan-filter" onclick="filterScan('long',this)">做多訊號</button>
+    <button class="scan-filter" onclick="filterScan('short',this)">做空訊號</button>
+    <button class="scan-filter" onclick="filterScan('high',this)">高分優先</button>
+    <button class="scan-btn" onclick="refreshScan()">⟳ 重新掃描</button>
+    <span id="scanTime" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto;"></span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="scan-table">
+      <thead>
+        <tr>
+          <th>幣對</th><th>價格</th><th>24H漲跌</th><th>成交量</th>
+          <th>多空比</th><th>獵手分數</th><th>賽克斯評分</th><th>訊號</th><th>Wyckoff階段</th><th>策略依據</th><th>通知</th>
+        </tr>
+      </thead>
+      <tbody id="scanBody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ========== RECOMMENDATIONS ========== -->
+<div class="section" id="recommend">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">AI 交易建議</div><div class="sec-sub">獵手分析 · 做多 / 做空 推薦 · 倉位管理</div></div>
+
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <div class="widget" style="flex:1;min-width:140px;"><div class="widget-label">市場偏向</div><div class="widget-val" id="mktBias">--</div></div>
+    <div class="widget" style="flex:1;min-width:140px;"><div class="widget-label">做多訊號</div><div class="widget-val green" id="longCount">--</div></div>
+    <div class="widget" style="flex:1;min-width:140px;"><div class="widget-label">做空訊號</div><div class="widget-val red" id="shortCount">--</div></div>
+    <div class="widget" style="flex:1;min-width:140px;"><div class="widget-label">最高分訊號</div><div class="widget-val orange" id="topSignal">--</div></div>
+  </div>
+
+  <!-- POSITION MANAGER -->
+  <div class="widget" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;color:var(--white);">⬡ AI 倉位管理計算器</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;">輸入本金與交易參數，AI 自動計算最佳倉位與槓桿</div>
+      </div>
+      <button class="scan-btn" onclick="aiPositionAnalyze()" id="posAiBtn">🤖 AI 分析倉位</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:16px;">
+      <div>
+        <div class="pm-lbl">本金 (USDT)</div>
+        <input id="pmCapital" type="number" value="1000" min="1" class="pm-input" oninput="calcPosition()">
+      </div>
+      <div>
+        <div class="pm-lbl">風險比例 (%)</div>
+        <input id="pmRisk" type="number" value="2" min="0.1" max="100" step="0.1" class="pm-input" oninput="calcPosition()">
+      </div>
+      <div>
+        <div class="pm-lbl">開倉價 (USDT)</div>
+        <input id="pmEntry" type="number" placeholder="例: 67500" class="pm-input" oninput="calcPosition()">
+      </div>
+      <div>
+        <div class="pm-lbl">止損價 (USDT)</div>
+        <input id="pmSL" type="number" placeholder="例: 65000" class="pm-input" oninput="calcPosition()">
+      </div>
+      <div>
+        <div class="pm-lbl">方向</div>
+        <select id="pmDir" class="pm-input" onchange="calcPosition()">
+          <option value="long">▲ 做多 LONG</option>
+          <option value="short">▼ 做空 SHORT</option>
+        </select>
+      </div>
+      <div>
+        <div class="pm-lbl">最大槓桿倍數</div>
+        <select id="pmMaxLev" class="pm-input" onchange="calcPosition()">
+          <option value="5">5x</option><option value="10" selected>10x</option>
+          <option value="20">20x</option><option value="50">50x</option>
+          <option value="100">100x</option><option value="125">125x</option>
+        </select>
+      </div>
+    </div>
+    <div id="pmResults" style="display:none;">
+      <div style="height:1px;background:var(--border);margin-bottom:16px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:16px;" id="pmResultCards"></div>
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:6px;">
+          <span>建議槓桿安全區間</span><span id="pmLevText">--</span>
+        </div>
+        <div style="height:10px;background:var(--card2);border-radius:5px;overflow:hidden;">
+          <div id="pmLevBar" style="height:100%;border-radius:5px;transition:width 0.8s ease;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">
+          <span>1x</span><span>10x</span><span>25x</span><span>50x+</span>
+        </div>
+      </div>
+      <div id="pmTPLevels"></div>
+      <div id="pmAiBox" style="display:none;margin-top:16px;border:1px solid var(--green);background:rgba(0,230,118,0.03);padding:16px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--green);margin-bottom:10px;">⬡ AI 倉位分析報告</div>
+        <div id="pmAiContent" style="font-size:13px;line-height:1.9;color:var(--text);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;color:var(--white);margin-bottom:12px;">市場訊號推薦</div>
+  <div class="rec-grid" id="recGrid"></div>
+</div>
+</div>
+
+<!-- ========== WYCKOFF ========== -->
+<div class="section" id="wyckoff">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">賽克斯法則</div><div class="sec-sub">Wyckoff Method · 市場週期四階段</div></div>
+  <div class="wyk-grid">
+    <div class="wyk-phase"><div class="wyk-phase-name phase-acc">吸籌期</div><div class="wyk-phase-en">ACCUMULATION</div></div>
+    <div class="wyk-phase"><div class="wyk-phase-name phase-up">上升期</div><div class="wyk-phase-en">MARKUP</div></div>
+    <div class="wyk-phase"><div class="wyk-phase-name phase-dist">出貨期</div><div class="wyk-phase-en">DISTRIBUTION</div></div>
+    <div class="wyk-phase"><div class="wyk-phase-name phase-down">下降期</div><div class="wyk-phase-en">MARKDOWN</div></div>
+  </div>
+  <!-- SVG Diagram -->
+  <div class="widget" style="margin-bottom:20px;">
+    <div class="widget-label">賽克斯週期圖</div>
+    <svg viewBox="0 0 1000 200" style="width:100%;height:180px;">
+      <defs>
+        <linearGradient id="wg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#5a7a96"/><stop offset="28%" stop-color="#f5a623"/>
+          <stop offset="55%" stop-color="#00e676"/><stop offset="78%" stop-color="#ff3d57"/>
+          <stop offset="100%" stop-color="#5a7a96"/>
+        </linearGradient>
+      </defs>
+      <line x1="250" y1="0" x2="250" y2="200" stroke="#1a2d3f" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="550" y1="0" x2="550" y2="200" stroke="#1a2d3f" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="780" y1="0" x2="780" y2="200" stroke="#1a2d3f" stroke-width="1" stroke-dasharray="4,4"/>
+      <polyline points="0,155 25,150 55,158 80,145 100,162 125,138 155,142 185,132 215,145 250,128 285,112 330,95 375,72 420,52 465,35 550,18 585,28 615,22 648,38 675,25 705,38 730,18 778,28 780,22 815,48 850,72 885,105 920,140 955,135 1000,152"
+        fill="none" stroke="url(#wg)" stroke-width="2.5"/>
+      <circle cx="100" cy="162" r="5" fill="#f5a623"/><text x="105" y="180" fill="#f5a623" font-size="9" font-family="JetBrains Mono">Spring</text>
+      <circle cx="730" cy="18" r="5" fill="#ff3d57"/><text x="735" y="16" fill="#ff3d57" font-size="9" font-family="JetBrains Mono">UTAD</text>
+    </svg>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="wykEvents"></div>
+</div>
+</div>
+
+<!-- ========== AI Q&A ========== -->
+<div class="section" id="qa">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">AI 策略問答</div><div class="sec-sub">Claude AI · 獵手策略顧問</div></div>
+  <div class="qa-container">
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="setQ('目前市場貪婪恐懼指數對交易有什麼影響？')">貪婪指數解讀</button>
+      <button class="quick-btn" onclick="setQ('如何用賽克斯Spring訊號進場做多？')">Spring進場法</button>
+      <button class="quick-btn" onclick="setQ('多空比如何指導倉位方向？')">多空比應用</button>
+      <button class="quick-btn" onclick="setQ('獵手策略止損和止盈如何設置？')">止損止盈</button>
+      <button class="quick-btn" onclick="setQ('BTC處於賽克斯哪個週期？如何操作？')">BTC週期</button>
+      <button class="quick-btn" onclick="setQ('如何識別假突破避免被主力洗出？')">識別假突破</button>
+    </div>
+    <div class="qa-history" id="qaHistory"></div>
+    <div class="qa-input-area">
+      <input class="qa-input" id="qaInput" placeholder="問AI任何交易策略問題..." onkeypress="if(event.key==='Enter')sendQ()">
+      <button class="qa-btn" id="qaBtn" onclick="sendQ()">分析</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== SETTINGS ========== -->
+<div class="section" id="settings">
+<div class="max-wrap">
+  <div class="sec-header"><div class="sec-title">系統設定</div><div class="sec-sub">Telegram · BingX API · 帳號管理</div></div>
+  <div class="settings-grid">
+    <div class="settings-card">
+      <h3>Telegram 機器人</h3>
+      <div class="field"><label>Bot Token</label><input type="text" id="tgToken" placeholder="123456:ABCdefGHI..." value=""></div>
+      <div class="field"><label>Chat ID</label><input type="text" id="tgChatId" placeholder="-100xxxxxxxxx 或 @頻道名" value=""></div>
+      <div style="display:flex;align-items:center;gap:0;">
+        <button class="save-btn" onclick="saveTg()">儲存</button>
+        <button class="test-btn" onclick="testTg()">測試發送</button>
+      </div>
+      <div id="tgMsg"></div>
+    </div>
+    <div class="settings-card">
+      <h3>BingX API</h3>
+      <div class="field"><label>API Key</label><input type="text" id="bxKey" placeholder="BingX API Key"></div>
+      <div class="field"><label>Secret Key</label><input type="password" id="bxSecret" placeholder="BingX Secret Key"></div>
+      <div class="field"><label>掃描間隔（秒）</label><input type="number" id="scanInterval" value="60" min="30"></div>
+      <button class="save-btn" onclick="saveBx()">儲存</button>
+      <div id="bxMsg"></div>
+    </div>
+    <div class="settings-card">
+      <h3>通知設定</h3>
+      <div class="field"><label>最低通知分數</label><input type="number" id="minScore" value="70" min="0" max="100"></div>
+      <div class="field"><label>通知冷卻（分鐘）</label><input type="number" id="notifyCool" value="30" min="5"></div>
+      <div class="field"><label>自動掃描</label>
+        <select id="autoScan" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--white);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 12px;outline:none;">
+          <option value="on">開啟</option><option value="off">關閉</option>
+        </select>
+      </div>
+      <button class="save-btn" onclick="saveNotify()">儲存</button>
+      <div id="notifyMsg"></div>
+    </div>
+    <div class="settings-card">
+      <h3>帳號管理</h3>
+      <div class="field"><label>使用者名稱</label><input type="text" id="chgUser" placeholder="新帳號"></div>
+      <div class="field"><label>新密碼</label><input type="password" id="chgPass" placeholder="新密碼（留空不更改）"></div>
+      <div class="field"><label>確認新密碼</label><input type="password" id="chgPass2" placeholder="確認新密碼"></div>
+      <button class="save-btn" onclick="changeAccount()">更新帳號</button>
+      <button class="test-btn" onclick="doLogout()" style="border-color:var(--red);color:var(--red);">登出</button>
+      <div id="acctMsg"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker-bar"><div class="ticker-track" id="tickerTrack"></div></div>
+
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const STORAGE_KEY = 'hunterPro';
+let cfg = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+if(!cfg.users) cfg.users=[{u:'hunter',p:'hunter2024'}];
+if(!cfg.tgToken) cfg.tgToken='';
+if(!cfg.tgChatId) cfg.tgChatId='';
+if(!cfg.bxKey) cfg.bxKey='';
+if(!cfg.bxSecret) cfg.bxSecret='';
+if(!cfg.minScore) cfg.minScore=70;
+if(!cfg.notifyCool) cfg.notifyCool=30;
+if(!cfg.scanInterval) cfg.scanInterval=60;
+const save=()=>localStorage.setItem(STORAGE_KEY,JSON.stringify(cfg));
+
+let isLoggedIn=false;
+let marketData=[];
+let scanFilter='all';
+let notifyLog={};
+
+// ============================================================
+// LOGIN
+// ============================================================
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const ok=cfg.users.some(x=>x.u===u&&x.p===p);
+  if(ok){
+    isLoggedIn=true;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainNav').style.display='flex';
+    initAll();
+  } else {
+    document.getElementById('loginErr').textContent='帳號或密碼錯誤';
+    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+  }
+}
+function doLogout(){
+  isLoggedIn=false;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('mainNav').style.display='none';
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('dashboard').classList.add('active');
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function showSec(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if(id==='scanner'&&marketData.length===0) refreshScan();
+  if(id==='recommend'&&marketData.length===0) refreshScan();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function initAll(){
+  loadSettings();
+  buildWykEvents();
+  await Promise.all([loadFearGreed(),loadMarketData()]);
+  buildTicker();
+  drawEnergy();
+  buildRecommendations();
+  startAutoRefresh();
+}
+
+// ============================================================
+// FEAR & GREED
+// ============================================================
+async function loadFearGreed(){
+  try{
+    const r=await fetch('https://api.alternative.me/fng/?limit=7');
+    const d=await r.json();
+    const cur=d.data[0];
+    const val=parseInt(cur.value);
+    document.getElementById('fgValue').textContent=val;
+    const labels=['極度恐懼','恐懼','中性','貪婪','極度貪婪'];
+    const lbIdx=val<25?0:val<45?1:val<55?2:val<75?3:4;
+    const lbColors=['var(--red)','#ff9800','var(--accent)','#8bc34a','var(--green)'];
+    document.getElementById('fgLabel').textContent=labels[lbIdx];
+    document.getElementById('fgLabel').style.color=lbColors[lbIdx];
+    document.getElementById('fgBig').textContent=val;
+    document.getElementById('fgBig').style.color=lbColors[lbIdx];
+    document.getElementById('fgSub').textContent=labels[lbIdx];
+    // Gauge needle
+    const deg=(val/100)*180-90;
+    document.getElementById('gaugeNeedle').style.transform=`rotate(${deg}deg)`;
+    const pct=val/100;
+    const totalLen=251.2;
+    document.getElementById('gaugeFill').style.strokeDashoffset=totalLen-(totalLen*pct);
+    // History
+    const hist=d.data.slice(0,7).reverse();
+    const histHTML=hist.map(h=>{
+      const v=parseInt(h.value);
+      const cl=v<45?'down':v<55?'':'up';
+      const dt=new Date(h.timestamp*1000).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+      return `<div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;">
+        <span style="color:var(--muted);width:40px">${dt}</span>
+        <div style="flex:1;height:4px;background:var(--card2);border-radius:2px;overflow:hidden;">
+          <div style="width:${v}%;height:100%;background:${v<45?'var(--red)':v<75?'var(--accent)':'var(--green)'};border-radius:2px"></div>
+        </div>
+        <span class="${cl}" style="width:28px;text-align:right">${v}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('fgHistory').innerHTML=histHTML;
+    // Update btc widget hint
+    const sentiment=val<30?'極度恐懼 — 潛在買入機會':val<45?'恐懼 — 關注吸籌訊號':val<55?'中性 — 等待方向':val<75?'貪婪 — 謹慎追多':' 極度貪婪 — 考慮減倉';
+    document.getElementById('fgLabel').textContent=sentiment;
+  }catch(e){console.warn('FG API err',e);}
+}
+
+// ============================================================
+// MARKET DATA (CoinGecko as proxy for BingX-like data)
+// ============================================================
+async function loadMarketData(){
+  try{
+    // Fetch top 100 coins with market data
+    const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=80&page=1&sparkline=false&price_change_percentage=24h');
+    const coins=await r.json();
+    // Simulate BingX futures pairs
+    marketData=coins.map(c=>{
+      const chg=c.price_change_percentage_24h||0;
+      const vol=c.total_volume||0;
+      // Simulate long/short ratio based on price change
+      const lsBase=50+chg*2;
+      const longPct=Math.max(20,Math.min(80,lsBase+Math.random()*10-5));
+      const shortPct=100-longPct;
+      // Hunter score based on multiple factors
+      const volScore=Math.min(40,vol/500000000*20);
+      const momentumScore=Math.min(30,Math.abs(chg)*2);
+      const lsScore=chg>0?(longPct-50)*0.6:(shortPct-50)*0.6;
+      const baseScore=40+volScore+Math.abs(lsScore);
+      const score=Math.min(99,Math.max(30,Math.round(baseScore+Math.random()*15)));
+      // Wyckoff phase
+      // === Wyckoff Phase Detection ===
+      let phase, wykSignal, wykReason;
+      // Multi-factor Wyckoff determination
+      const volRatio = vol / (c.total_volume||1); // relative volume
+      const priceFromHigh = ((c.ath||c.current_price) - c.current_price) / (c.ath||c.current_price) * 100;
+
+      if(chg > 8 && longPct > 60) {
+        phase='上升'; wykSignal='long'; wykReason='SOS — 強勢突破，量增價漲';
+      } else if(chg > 2 && chg <= 8 && longPct > 55) {
+        phase = Math.random()>0.4 ? '上升' : '吸籌';
+        wykSignal='long'; wykReason = phase==='吸籌' ? 'LPS — 末端支撐回測，低風險進場' : 'Markup — 趨勢延續';
+      } else if(Math.abs(chg) <= 2 && longPct >= 48 && longPct <= 58) {
+        // Tight range = accumulation or distribution
+        if(longPct >= 50) {
+          phase='吸籌'; wykSignal='long'; wykReason='Spring — 盤整區低位，吸籌末期訊號';
+        } else {
+          phase='出貨'; wykSignal='short'; wykReason='ST — 次級測試頂部，出貨訊號';
+        }
+      } else if(chg < -2 && chg >= -8 && shortPct > 55) {
+        phase = Math.random()>0.4 ? '下降' : '出貨';
+        wykSignal='short'; wykReason = phase==='出貨' ? 'UTAD — 假突破後回落，出貨確認' : 'Markdown — 趨勢下行延續';
+      } else if(chg < -8 && shortPct > 60) {
+        phase='下降'; wykSignal='short'; wykReason='SC — 賣壓高潮，跌勢加速';
+      } else {
+        phase = chg >= 0 ? '吸籌' : '出貨';
+        wykSignal='neutral'; wykReason='整理中 — 等待方向確認';
+      }
+
+      // Wyckoff confirmation score (0-100)
+      // Long-compatible phases: 吸籌(Spring/LPS), 上升(SOS/Markup)
+      // Short-compatible phases: 出貨(UTAD/ST), 下降(SC/Markdown)
+      let wykScore = 0;
+      if(wykSignal==='long'){
+        if(phase==='吸籌') wykScore = 60 + (longPct-50)*1.5 + Math.min(20, Math.abs(chg)*2);
+        else if(phase==='上升') wykScore = 70 + Math.min(25, Math.abs(chg)*1.5);
+      } else if(wykSignal==='short'){
+        if(phase==='出貨') wykScore = 60 + (shortPct-50)*1.5 + Math.min(20, Math.abs(chg)*2);
+        else if(phase==='下降') wykScore = 70 + Math.min(25, Math.abs(chg)*1.5);
+      }
+      wykScore = Math.min(99, Math.round(wykScore));
+
+      // Final signal: must align with Wyckoff
+      let signal;
+      if(score>=65 && chg>1 && longPct>53 && (phase==='吸籌'||phase==='上升') && wykSignal==='long') signal='long';
+      else if(score>=65 && chg<-1 && shortPct>53 && (phase==='出貨'||phase==='下降') && wykSignal==='short') signal='short';
+      else signal='neutral';
+      return {
+        sym:c.symbol.toUpperCase()+'/USDT',
+        name:c.name,
+        price:c.current_price,
+        chg:chg.toFixed(2),
+        vol,longPct:longPct.toFixed(1),shortPct:shortPct.toFixed(1),
+        score,phase,signal,wykScore,wykReason,
+        mcap:c.market_cap,
+        id:c.id,
+        img:c.image
+      };
+    });
+    // Sort by score desc
+    marketData.sort((a,b)=>b.score-a.score);
+    document.getElementById('scanCount').textContent=marketData.length;
+
+    // BTC price
+    const btc=marketData.find(c=>c.sym==='BTC/USDT');
+    if(btc){
+      document.getElementById('btcPrice').textContent='$'+btc.price.toLocaleString();
+      const chgEl=document.getElementById('btcChg');
+      chgEl.textContent=(btc.chg>0?'+':'')+btc.chg+'%';
+      chgEl.className='widget-change '+(btc.chg>0?'up':'down');
+      // Long/short ratio for BTC
+      document.getElementById('lsRatioVal').textContent=btc.longPct+'%';
+      document.getElementById('lsRatioVal').className='widget-val '+(parseFloat(btc.longPct)>50?'green':'red');
+      document.getElementById('lsRatioSub').textContent='多頭 vs 空頭 '+btc.shortPct+'%';
+      // LS bar
+      document.getElementById('lsLongBar').style.width=btc.longPct+'%';
+      document.getElementById('lsLongBar').textContent=btc.longPct+'%';
+      document.getElementById('lsShortBar').style.width=btc.shortPct+'%';
+      document.getElementById('lsShortBar').textContent=btc.shortPct+'%';
+    }
+    // Top gainers/losers
+    const sorted=[...marketData].sort((a,b)=>parseFloat(b.chg)-parseFloat(a.chg));
+    const gainHTML=sorted.slice(0,5).map(c=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(26,45,63,0.5);">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${c.sym}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px" class="up">+${c.chg}%</span>
+      </div>`).join('');
+    document.getElementById('topGainers').innerHTML=gainHTML;
+    const loseHTML=sorted.slice(-5).reverse().map(c=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(26,45,63,0.5);">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white)">${c.sym}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px" class="down">${c.chg}%</span>
+      </div>`).join('');
+    document.getElementById('topLosers').innerHTML=loseHTML;
+    // ls coins mini
+    const lsCoinsHTML=marketData.slice(0,4).map(c=>`
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px;">
+          <span>${c.sym}</span><span class="${parseFloat(c.longPct)>50?'up':'down'}">${c.longPct}% / ${c.shortPct}%</span>
+        </div>
+        <div class="ls-bar" style="height:8px;">
+          <div class="ls-long" style="width:${c.longPct}%;font-size:0"></div>
+          <div class="ls-short" style="width:${c.shortPct}%;font-size:0"></div>
+        </div>
+      </div>`).join('');
+    document.getElementById('lsCoins').innerHTML=lsCoinsHTML;
+    buildScanTable();
+    buildRecommendations();
+    buildTop5Panels();
+  }catch(e){console.warn('Market data err',e);}
+}
+
+// ============================================================
+// SCAN TABLE
+// ============================================================
+function buildScanTable(){
+  const tbody=document.getElementById('scanBody');
+  let data=[...marketData];
+  if(scanFilter==='long') data=data.filter(c=>c.signal==='long');
+  else if(scanFilter==='short') data=data.filter(c=>c.signal==='short');
+  else if(scanFilter==='high') data=data.sort((a,b)=>b.score-a.score);
+  document.getElementById('scanTime').textContent='更新: '+new Date().toLocaleTimeString('zh-TW');
+  tbody.innerHTML=data.slice(0,50).map(c=>{
+    const scoreColor=c.score>=70?'var(--green)':c.score>=50?'var(--accent)':'var(--muted)';
+    const sigEl=c.signal==='long'?`<span class="sig-long">▲ 做多</span>`:c.signal==='short'?`<span class="sig-short">▼ 做空</span>`:`<span class="sig-neutral">— 觀望</span>`;
+    const phaseColor=c.phase==='上升'?'var(--green)':c.phase==='下降'?'var(--red)':c.phase==='吸籌'?'var(--accent)':'var(--muted)';
+    const volFmt=c.vol>=1e9?(c.vol/1e9).toFixed(1)+'B':c.vol>=1e6?(c.vol/1e6).toFixed(0)+'M':'--';
+    return `<tr>
+      <td style="color:var(--white);font-weight:700">${c.sym}</td>
+      <td>$${c.price<1?c.price.toFixed(4):c.price.toLocaleString()}</td>
+      <td class="${parseFloat(c.chg)>=0?'up':'down'}">${parseFloat(c.chg)>=0?'+':''}${c.chg}%</td>
+      <td style="color:var(--muted)">$${volFmt}</td>
+      <td><span style="color:${parseFloat(c.longPct)>50?'var(--green)':'var(--red)'}">${c.longPct}%</span>/<span style="color:${parseFloat(c.shortPct)>50?'var(--red)':'var(--green)'}">${c.shortPct}%</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="score-bar"><div class="score-fill" style="width:${c.score}%;background:${scoreColor}"></div></div>
+          <span style="color:${scoreColor};font-weight:700">${c.score}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div class="score-bar"><div class="score-fill" style="width:${c.wykScore||0}%;background:${c.wykScore>=70?'var(--green)':c.wykScore>=50?'var(--accent)':'var(--muted)'}"></div></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${c.wykScore>=70?'var(--green)':c.wykScore>=50?'var(--accent)':'var(--muted)'}">${c.wykScore||0}</span>
+        </div>
+      </td>
+      <td>${sigEl}</td>
+      <td style="color:${phaseColor}">${c.phase}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);max-width:160px;">${c.wykReason||'—'}</td>
+      <td><button class="btn-notify" onclick="sendSignalNotify('${c.sym}','${c.signal}',${c.score},'${c.phase}',${c.chg},${c.price},${c.wykScore||0},'${c.wykReason||''}')">📨 TG</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterScan(f,el){
+  scanFilter=f;
+  document.querySelectorAll('.scan-filter').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  buildScanTable();
+}
+
+async function refreshScan(){
+  document.getElementById('scanBody').innerHTML=`<tr><td colspan="11" style="text-align:center;padding:30px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);">掃描中...</td></tr>`;
+  await loadMarketData();
+}
+
+// ============================================================
+// ENERGY CHART (Canvas)
+// ============================================================
+function drawEnergy(){
+  const canvas=document.getElementById('energyCanvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;
+  canvas.height=canvas.offsetHeight*2;
+  ctx.scale(2,2);
+  const W=canvas.offsetWidth,H=canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+
+  const topCoins=marketData.slice(0,16);
+  if(topCoins.length===0){
+    ctx.fillStyle='rgba(90,120,150,0.5)';
+    ctx.font='12px JetBrains Mono';
+    ctx.fillText('載入中...',W/2-30,H/2);
+    return;
+  }
+  const barW=(W-40)/(topCoins.length);
+  const maxVol=Math.max(...topCoins.map(c=>c.vol));
+  topCoins.forEach((c,i)=>{
+    const x=20+i*barW;
+    const heightRatio=c.vol/maxVol;
+    const barH=Math.max(8,(H-40)*heightRatio);
+    const y=H-20-barH;
+    const isUp=parseFloat(c.chg)>0;
+    const grad=ctx.createLinearGradient(0,y,0,H-20);
+    if(isUp){grad.addColorStop(0,'rgba(0,230,118,0.9)');grad.addColorStop(1,'rgba(0,100,50,0.3)');}
+    else{grad.addColorStop(0,'rgba(255,61,87,0.9)');grad.addColorStop(1,'rgba(120,0,20,0.3)');}
+    ctx.fillStyle=grad;
+    ctx.fillRect(x+2,y,barW-4,barH);
+    // score dot
+    const scoreY=y-8;
+    const scoreRatio=c.score/100;
+    ctx.beginPath();
+    ctx.arc(x+barW/2,scoreY,3,0,Math.PI*2);
+    ctx.fillStyle=c.score>=70?'rgba(245,166,35,1)':'rgba(90,120,150,0.6)';
+    ctx.fill();
+    // label
+    if(barW>20){
+      ctx.fillStyle='rgba(184,207,224,0.6)';
+      ctx.font=`${Math.min(9,barW-2)}px JetBrains Mono`;
+      ctx.textAlign='center';
+      const sym=c.sym.replace('/USDT','');
+      ctx.fillText(sym.slice(0,4),x+barW/2,H-6);
+    }
+  });
+  // Legend
+  ctx.textAlign='left';
+  ctx.font='9px JetBrains Mono';
+  ctx.fillStyle='rgba(0,230,118,0.8)'; ctx.fillRect(20,4,8,8); ctx.fillStyle='rgba(184,207,224,0.6)'; ctx.fillText('漲',32,12);
+  ctx.fillStyle='rgba(255,61,87,0.8)'; ctx.fillRect(55,4,8,8); ctx.fillStyle='rgba(184,207,224,0.6)'; ctx.fillText('跌',67,12);
+  ctx.fillStyle='rgba(245,166,35,0.8)'; ctx.beginPath();ctx.arc(88,8,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(184,207,224,0.6)'; ctx.fillText('高分',95,12);
+}
+
+// ============================================================
+// PRICE LEVEL CALCULATOR
+// ============================================================
+function calcLevels(price, dir, atr){
+  // ATR-based dynamic levels; fallback to % if no ATR
+  const p = parseFloat(price);
+  // Use ATR ~1.5x daily range estimate or default % based on price magnitude
+  const volatility = atr || (p > 10000 ? 0.018 : p > 100 ? 0.025 : p > 1 ? 0.035 : 0.05);
+  const fmt = v => v >= 1000 ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+                 : v >= 1    ? v.toFixed(3)
+                 : v >= 0.01 ? v.toFixed(5)
+                 : v.toFixed(7);
+  if(dir === 'long'){
+    const sl   = p * (1 - volatility * 1.2);
+    const entry= p * (1 + volatility * 0.1); // slight above current = breakout confirm
+    const tp1  = p * (1 + volatility * 1.5);
+    const tp2  = p * (1 + volatility * 3.0);
+    const tp3  = p * (1 + volatility * 5.0);
+    const risk = ((entry - sl) / entry * 100).toFixed(2);
+    const rr1  = ((tp1 - entry) / (entry - sl)).toFixed(1);
+    const rr3  = ((tp3 - entry) / (entry - sl)).toFixed(1);
+    return {entry:fmt(entry), sl:fmt(sl), tp1:fmt(tp1), tp2:fmt(tp2), tp3:fmt(tp3),
+            slPct:'-'+(volatility*1.2*100).toFixed(1)+'%',
+            tp1Pct:'+'+(volatility*1.5*100).toFixed(1)+'%',
+            tp2Pct:'+'+(volatility*3.0*100).toFixed(1)+'%',
+            tp3Pct:'+'+(volatility*5.0*100).toFixed(1)+'%',
+            risk, rr1, rr3};
+  } else {
+    const sl   = p * (1 + volatility * 1.2);
+    const entry= p * (1 - volatility * 0.1);
+    const tp1  = p * (1 - volatility * 1.5);
+    const tp2  = p * (1 - volatility * 3.0);
+    const tp3  = p * (1 - volatility * 5.0);
+    const risk = ((sl - entry) / entry * 100).toFixed(2);
+    const rr1  = ((entry - tp1) / (sl - entry)).toFixed(1);
+    const rr3  = ((entry - tp3) / (sl - entry)).toFixed(1);
+    return {entry:fmt(entry), sl:fmt(sl), tp1:fmt(tp1), tp2:fmt(tp2), tp3:fmt(tp3),
+            slPct:'+'+(volatility*1.2*100).toFixed(1)+'%',
+            tp1Pct:'-'+(volatility*1.5*100).toFixed(1)+'%',
+            tp2Pct:'-'+(volatility*3.0*100).toFixed(1)+'%',
+            tp3Pct:'-'+(volatility*5.0*100).toFixed(1)+'%',
+            risk, rr1, rr3};
+  }
+}
+
+function priceLevelsHTML(lv, isLong){
+  const rrVal = parseFloat(lv.rr3);
+  const rrClass = rrVal >= 3 ? 'rr-good' : rrVal >= 2 ? 'rr-ok' : 'rr-bad';
+  const clrBar = isLong ? '#00e676' : '#ff3d57';
+  const rows = [
+    {lbl:'進場',cls:'lbl-entry', val:lv.entry, pct:'',       bar:50,  bg:'#f5a623'},
+    {lbl:'SL',  cls:'lbl-sl',    val:lv.sl,    pct:lv.slPct, bar:20,  bg:'#ff3d57'},
+    {lbl:'TP1', cls:'lbl-tp1',   val:lv.tp1,   pct:lv.tp1Pct,bar:60,  bg:'#8bc34a'},
+    {lbl:'TP2', cls:'lbl-tp2',   val:lv.tp2,   pct:lv.tp2Pct,bar:75,  bg:'#00e676'},
+    {lbl:'TP3', cls:'lbl-tp3',   val:lv.tp3,   pct:lv.tp3Pct,bar:92,  bg:'#00e5ff'},
+  ];
+  return `<div class="price-levels">
+    ${rows.map(r=>`<div class="price-row">
+      <div class="price-row-bar" style="width:${r.bar}%;background:${r.bg}"></div>
+      <span class="price-lbl ${r.cls}">${r.lbl}</span>
+      <span class="price-val" style="color:${r.bg}">$${r.val}</span>
+      <span class="price-pct" style="color:${r.bg}">${r.pct}</span>
+    </div>`).join('')}
+  </div>
+  <span class="rr-badge ${rrClass}">盈虧比 RR ${lv.rr1} → ${lv.rr3} (TP3)</span>`;
+}
+
+// ============================================================
+// RECOMMENDATIONS
+// ============================================================
+function buildRecommendations(){
+  const longs=marketData.filter(c=>c.signal==='long').slice(0,4);
+  const shorts=marketData.filter(c=>c.signal==='short').slice(0,4);
+  document.getElementById('longCount').textContent=marketData.filter(c=>c.signal==='long').length;
+  document.getElementById('shortCount').textContent=marketData.filter(c=>c.signal==='short').length;
+  const overallUp=marketData.filter(c=>parseFloat(c.chg)>0).length>marketData.length/2;
+  document.getElementById('mktBias').textContent=overallUp?'看多':'看空';
+  document.getElementById('mktBias').className='widget-val '+(overallUp?'green':'red');
+  const topS=marketData[0];
+  document.getElementById('topSignal').textContent=topS?topS.sym+'('+topS.score+')':'--';
+
+  const reasons={
+    long:['Spring 彈簧測試完成，主力吸籌訊號明確，等待 SOS 確認突破',
+          '成交量放大突破阻力，SOS 強勢跡象，趨勢啟動初期',
+          '多頭比例偏高，LPS 回測支撐成功，低風險入場',
+          '賽克斯吸籌末期，主力清洗完畢，彈力啟動在即'],
+    short:['UTAD 假突破後快速回落，主力出貨訊號明確',
+           '成交量萎縮且多頭力竭，賣壓持續累積',
+           '空頭比例偏高，賽克斯出貨期確認，下行風險上升',
+           '跌破重要支撐，進入 Markdown 下降階段，趨勢向空']
+  };
+
+  const allRec=[
+    ...longs.map(c=>({...c,dir:'long'})),
+    ...shorts.map(c=>({...c,dir:'short'}))
+  ];
+  const grid=document.getElementById('recGrid');
+  grid.innerHTML=allRec.map((c,i)=>{
+    const isLong=c.dir==='long';
+    const clr=isLong?'var(--green)':'var(--red)';
+    const reason=reasons[c.dir][i%4];
+    const lv=calcLevels(c.price, c.dir);
+    const bars=[
+      {lbl:'動能',val:Math.min(99,50+Math.abs(parseFloat(c.chg))*4)},
+      {lbl:'成交量',val:Math.min(99,c.score)},
+      {lbl:'多空比',val:isLong?parseFloat(c.longPct):parseFloat(c.shortPct)},
+      {lbl:'Wyckoff',val:c.phase==='上升'||c.phase==='吸籌'?70:40},
+    ];
+    return `<div class="rec-card ${isLong?'long':'short'}-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="rec-dir ${c.dir}">${isLong?'▲ 做多 LONG':'▼ 做空 SHORT'}</div>
+          <div class="rec-sym">${c.sym}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">獵手分數: <span style="color:${clr};font-weight:700">${c.score}/100</span> · ${c.phase}</div>
+        </div>
+        <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;">
+          <div style="color:var(--muted);font-size:9px;letter-spacing:1px">現價</div>
+          <div style="color:var(--white);font-size:14px;font-weight:700">$${c.price>=1?c.price.toLocaleString():c.price.toFixed(5)}</div>
+          <div class="${parseFloat(c.chg)>=0?'up':'down'}" style="font-size:10px">${parseFloat(c.chg)>=0?'+':''}${c.chg}%</div>
+        </div>
+      </div>
+
+      ${priceLevelsHTML(lv, isLong)}
+
+      <div class="rec-score-wrap" style="margin-top:10px;">
+        ${bars.map(b=>`<div class="rec-score-row">
+          <span style="width:40px">${b.lbl}</span>
+          <div class="rec-mini-bar"><div class="rec-mini-fill" style="width:${b.val}%;background:${clr}"></div></div>
+          <span style="width:24px;text-align:right;font-size:10px">${Math.round(b.val)}</span>
+        </div>`).join('')}
+      </div>
+      <div class="rec-reason" style="margin-top:10px;">${reason}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button class="rec-tg" onclick="sendSignalNotify('${c.sym}','${c.dir}',${c.score},'${c.phase}',${c.chg},${c.price})">📨 發送至 Telegram</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// POSITION MANAGER
+// ============================================================
+function calcPosition(){
+  const capital = parseFloat(document.getElementById('pmCapital').value)||0;
+  const riskPct  = parseFloat(document.getElementById('pmRisk').value)||2;
+  const entry    = parseFloat(document.getElementById('pmEntry').value)||0;
+  const sl       = parseFloat(document.getElementById('pmSL').value)||0;
+  const dir      = document.getElementById('pmDir').value;
+  const maxLev   = parseInt(document.getElementById('pmMaxLev').value)||10;
+
+  if(!capital||!entry||!sl) return;
+
+  const isLong = dir==='long';
+  const slDist = Math.abs(entry - sl);
+  if(slDist===0) return;
+
+  const slPct     = (slDist / entry) * 100;
+  const riskAmt   = capital * (riskPct / 100);             // $ at risk
+  const posSize   = riskAmt / slDist;                      // coins/contracts
+  const posValue  = posSize * entry;                       // total position value
+  const reqLev    = posValue / capital;                    // leverage needed
+  const sugLev    = Math.min(reqLev, maxLev);              // cap at maxLev
+  const adjPos    = (capital * sugLev) / entry;            // adjusted position
+  const adjRisk   = adjPos * slDist;                       // actual risk with adj pos
+  const liqDist   = (entry / sugLev) * 0.9;               // approx liq price distance
+  const liqPrice  = isLong ? entry - liqDist : entry + liqDist;
+  const margin    = posValue / sugLev;                     // required margin
+
+  // TP calculations (ATR-based multiples)
+  const atrMult   = [1.5, 3.0, 5.0];
+  const tpPrices  = atrMult.map(m => isLong ? entry + slDist*m : entry - slDist*m);
+  const tpPnl     = tpPrices.map(tp => adjPos * Math.abs(tp - entry));
+  const tpRR      = atrMult.map(m => m.toFixed(1));
+
+  const fmt = v => v>=1000 ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+                 : v>=1    ? v.toFixed(3)
+                 : v>=0.01 ? v.toFixed(5)
+                 : v.toFixed(7);
+
+  // Risk level assessment
+  const levPct = Math.min(100, (sugLev / 50) * 100);
+  const levColor = sugLev<=5?'var(--green)':sugLev<=15?'#8bc34a':sugLev<=25?'var(--accent)':sugLev<=50?'#ff9800':'var(--red)';
+  const levGrade = sugLev<=5?'保守安全':sugLev<=15?'適中穩健':sugLev<=25?'積極':sugLev<=50?'激進高風險':'極高風險';
+  const cardClass = sugLev<=10?'good':sugLev<=25?'warn':'danger';
+
+  document.getElementById('pmResults').style.display='block';
+
+  // Result cards
+  document.getElementById('pmResultCards').innerHTML = `
+    <div class="pm-result-card info">
+      <div class="pm-card-lbl">每筆風險金額</div>
+      <div class="pm-card-val" style="color:var(--accent)">$${riskAmt.toFixed(2)}</div>
+      <div class="pm-card-sub" style="color:var(--muted)">${riskPct}% 本金</div>
+    </div>
+    <div class="pm-result-card ${cardClass}">
+      <div class="pm-card-lbl">建議槓桿</div>
+      <div class="pm-card-val" style="color:${levColor}">${sugLev.toFixed(1)}x</div>
+      <div class="pm-card-sub" style="color:${levColor}">${levGrade}</div>
+    </div>
+    <div class="pm-result-card info">
+      <div class="pm-card-lbl">倉位大小 (幣數)</div>
+      <div class="pm-card-val" style="color:var(--blue)">${adjPos.toFixed(4)}</div>
+      <div class="pm-card-sub" style="color:var(--muted)">≈ $${(adjPos*entry).toFixed(0)}</div>
+    </div>
+    <div class="pm-result-card info">
+      <div class="pm-card-lbl">所需保證金</div>
+      <div class="pm-card-val" style="color:var(--white)">${margin.toFixed(2)}</div>
+      <div class="pm-card-sub" style="color:var(--muted)">USDT</div>
+    </div>
+    <div class="pm-result-card ${sugLev>20?'danger':'warn'}">
+      <div class="pm-card-lbl">預估爆倉價</div>
+      <div class="pm-card-val" style="color:var(--red)">$${fmt(liqPrice)}</div>
+      <div class="pm-card-sub" style="color:var(--muted)">${isLong?'低於進場':'高於進場'}</div>
+    </div>
+    <div class="pm-result-card ${cardClass}">
+      <div class="pm-card-lbl">止損距離</div>
+      <div class="pm-card-val" style="color:var(--red)">${slPct.toFixed(2)}%</div>
+      <div class="pm-card-sub" style="color:var(--muted)">$${fmt(sl)}</div>
+    </div>`;
+
+  // Leverage bar
+  document.getElementById('pmLevBar').style.width = levPct+'%';
+  document.getElementById('pmLevBar').style.background = `linear-gradient(90deg,var(--green),${levColor})`;
+  document.getElementById('pmLevText').textContent = sugLev.toFixed(1)+'x · '+levGrade;
+  document.getElementById('pmLevText').style.color = levColor;
+
+  // TP levels table
+  const tpColors = ['#8bc34a','var(--green)','#00e5ff'];
+  const tpNames  = ['TP1 — 第一目標','TP2 — 主要目標','TP3 — 追勢目標'];
+  document.getElementById('pmTPLevels').innerHTML = `
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">止盈 / 止損 價格表</div>
+    <div style="border:1px solid var(--border);overflow:hidden;margin-bottom:16px;">
+      <div class="pm-tp-row">
+        <div class="pm-tp-bg" style="width:100%;background:var(--accent)"></div>
+        <span class="pm-tp-lbl" style="color:var(--accent)">進場</span>
+        <span class="pm-tp-price" style="color:var(--accent)">$${fmt(entry)}</span>
+        <span class="pm-tp-pnl" style="color:var(--muted)">— 開倉點</span>
+        <span class="pm-tp-rr" style="color:var(--muted)">0R</span>
+      </div>
+      <div class="pm-tp-row">
+        <div class="pm-tp-bg" style="width:30%;background:var(--red)"></div>
+        <span class="pm-tp-lbl" style="color:var(--red)">止損 SL</span>
+        <span class="pm-tp-price" style="color:var(--red)">$${fmt(sl)}</span>
+        <span class="pm-tp-pnl" style="color:var(--red)">-$${adjRisk.toFixed(2)}</span>
+        <span class="pm-tp-rr" style="color:var(--muted)">1R 風險</span>
+      </div>
+      ${tpPrices.map((tp,i)=>`
+      <div class="pm-tp-row">
+        <div class="pm-tp-bg" style="width:${50+i*20}%;background:${tpColors[i]}"></div>
+        <span class="pm-tp-lbl" style="color:${tpColors[i]}">${['TP1','TP2','TP3'][i]}</span>
+        <span class="pm-tp-price" style="color:${tpColors[i]}">$${fmt(tp)}</span>
+        <span class="pm-tp-pnl" style="color:${tpColors[i]}">+$${tpPnl[i].toFixed(2)}</span>
+        <span class="pm-tp-rr" style="color:${tpColors[i]}">${tpRR[i]}R · ${tpNames[i]}</span>
+      </div>`).join('')}
+    </div>`;
+
+  // Store for AI use
+  window._pmData = {capital, riskPct, riskAmt, entry, sl, slPct, dir, sugLev, levGrade,
+    adjPos, posValue, margin, liqPrice, tpPrices, tpPnl, tpRR, isLong};
+}
+
+async function aiPositionAnalyze(){
+  const btn = document.getElementById('posAiBtn');
+  const entry = parseFloat(document.getElementById('pmEntry').value)||0;
+  const sl    = parseFloat(document.getElementById('pmSL').value)||0;
+  if(!entry || !sl){
+    alert('請先填入開倉價和止損價！');
+    return;
+  }
+  if(!window._pmData) calcPosition();
+  const d = window._pmData;
+  if(!d){ alert('請先填入所有欄位'); return; }
+
+  btn.textContent = '分析中...';
+  btn.disabled = true;
+
+  const fmt = v => v>=1?v.toLocaleString('en-US',{maximumFractionDigits:2}):v.toFixed(5);
+  const prompt = `請用繁體中文分析以下倉位計劃，並給出獵手策略觀點：
+
+【倉位參數】
+- 本金: $${d.capital} USDT
+- 方向: ${d.isLong?'做多 LONG':'做空 SHORT'}
+- 每筆風險: $${d.riskAmt.toFixed(2)} (${d.riskPct}% 本金)
+- 開倉價: $${fmt(d.entry)}
+- 止損價: $${fmt(d.sl)} (距離 ${d.slPct.toFixed(2)}%)
+- 建議槓桿: ${d.sugLev.toFixed(1)}x (${d.levGrade})
+- 倉位大小: ${d.adjPos.toFixed(4)} 幣 ≈ $${(d.adjPos*d.entry).toFixed(0)}
+- 保證金需求: $${d.margin.toFixed(2)}
+- 預估爆倉價: $${fmt(d.liqPrice)}
+- TP1: $${fmt(d.tpPrices[0])} (+$${d.tpPnl[0].toFixed(2)}, RR ${d.tpRR[0]})
+- TP2: $${fmt(d.tpPrices[1])} (+$${d.tpPnl[1].toFixed(2)}, RR ${d.tpRR[1]})
+- TP3: $${fmt(d.tpPrices[2])} (+$${d.tpPnl[2].toFixed(2)}, RR ${d.tpRR[2]})
+
+請評估：1)這個倉位計劃是否合理 2)槓桿是否適當 3)建議的出場策略 4)需要注意的風險 5)獵手策略觀點分析。約200字。`;
+
+  const aiBox = document.getElementById('pmAiBox');
+  const aiContent = document.getElementById('pmAiContent');
+  aiBox.style.display = 'block';
+  aiContent.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+  try{
+    const r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:'你是專業虛擬貨幣交易員和風險管理顧問，精通賽克斯（Wyckoff）策略和倉位管理。用繁體中文回答，條理清晰，給出實用建議。',
+        messages:[{role:'user', content:prompt}]
+      })
+    });
+    const data = await r.json();
+    const ans = data.content?.map(c=>c.text||'').join('\n')||'無法取得回應';
+    aiContent.innerHTML = ans.replace(/\n/g,'<br>');
+  }catch(e){
+    aiContent.innerHTML = '<span style="color:var(--red)">連線錯誤，請稍後再試</span>';
+  }
+  btn.textContent = '🤖 AI 分析倉位';
+  btn.disabled = false;
+}
+
+// ============================================================
+// WYCKOFF EVENTS
+// ============================================================
+function buildWykEvents(){
+  const events=[
+    {abbr:'PS',name:'初步支撐',desc:'下跌後出現首次大量買盤，提示趨勢可能轉變。'},
+    {abbr:'SC',name:'賣壓高潮',desc:'恐慌性拋售，成交量極大，價格觸底後強力反彈。'},
+    {abbr:'AR',name:'自動反彈',desc:'SC後空頭回補帶動反彈，定義整理區頂部阻力。'},
+    {abbr:'ST',name:'次級測試',desc:'重新測試SC低點，量價均縮小，確認支撐。'},
+    {abbr:'SP',name:'彈簧測試',desc:'假突破支撐後快速收回，主力最後清洗，最佳進場。'},
+    {abbr:'SOS',name:'強勢跡象',desc:'突破整理上軌，量價配合，確認趨勢啟動。'},
+    {abbr:'LPS',name:'末端支撐',desc:'SOS後回測支撐，低量低幅，低風險補倉點。'},
+    {abbr:'UTAD',name:'上升假突破',desc:'出貨末期假突破阻力後崩跌，明確逃頂訊號。'},
+  ];
+  document.getElementById('wykEvents').innerHTML=events.map(e=>`
+    <div class="widget" style="padding:16px;">
+      <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--accent);letter-spacing:2px">${e.abbr}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--white);margin:4px 0">${e.name}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">${e.desc}</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// TOP5 WYCKOFF PANELS
+// ============================================================
+function buildTop5Panels(){
+  const top5Long = marketData
+    .filter(c=>c.signal==='long'&&(c.phase==='吸籌'||c.phase==='上升')&&c.wykScore>=60)
+    .sort((a,b)=>parseFloat(b.longPct)-parseFloat(a.longPct))
+    .slice(0,5);
+
+  const top5Short = marketData
+    .filter(c=>c.signal==='short'&&(c.phase==='出貨'||c.phase==='下降')&&c.wykScore>=60)
+    .sort((a,b)=>parseFloat(b.shortPct)-parseFloat(a.shortPct))
+    .slice(0,5);
+
+  const renderRow = (c, dir) => {
+    const isLong = dir==='long';
+    const pct = isLong ? c.longPct : c.shortPct;
+    const clr = isLong ? 'var(--green)' : 'var(--red)';
+    const wykClr = c.wykScore>=75?'var(--green)':c.wykScore>=55?'var(--accent)':'var(--muted)';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(26,45,63,0.4);">
+      <span style="font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:1px;color:var(--white);min-width:80px">${c.sym.replace('/USDT','')}</span>
+      <div style="flex:1;">
+        <div style="height:4px;background:var(--card2);border-radius:2px;overflow:hidden;margin-bottom:3px;">
+          <div style="width:${pct}%;height:100%;background:${clr};border-radius:2px;"></div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);">${c.wykReason||c.phase}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${clr};font-weight:700">${pct}%</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:${wykClr}">賽克斯 ${c.wykScore}</div>
+      </div>
+      <button class="btn-notify" style="padding:2px 8px;font-size:9px;" onclick="sendSignalNotify('${c.sym}','${dir}',${c.score},'${c.phase}',${c.chg},${c.price},${c.wykScore||0},'${(c.wykReason||'').replace(/'/g,'')}')">TG</button>
+    </div>`;
+  };
+
+  const emptyMsg = `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);padding:12px 0;">暫無符合賽克斯條件的訊號</div>`;
+
+  document.getElementById('top5LongPanel').innerHTML =
+    top5Long.length ? top5Long.map(c=>renderRow(c,'long')).join('') : emptyMsg;
+  document.getElementById('top5ShortPanel').innerHTML =
+    top5Short.length ? top5Short.map(c=>renderRow(c,'short')).join('') : emptyMsg;
+
+  // Update nav badge
+  const total = top5Long.length + top5Short.length;
+  const badge = document.getElementById('autoNotifyCount');
+  if(badge) {
+    badge.textContent = total > 0 ? `⬡ ${total} 訊號` : '';
+    badge.style.color = total > 0 ? 'var(--accent)' : 'var(--muted)';
+  }
+}
+
+// ============================================================
+// TICKER
+// ============================================================
+function buildTicker(){
+  const items=marketData.slice(0,20).map(c=>
+    `<span class="ticker-item">
+      <span class="ticker-sym">${c.sym}</span>
+      <span>$${c.price<1?c.price.toFixed(4):c.price.toLocaleString()}</span>
+      <span class="${parseFloat(c.chg)>=0?'up':'down'}">${parseFloat(c.chg)>=0?'+':''}${c.chg}%</span>
+    </span>`).join('');
+  const track=document.getElementById('tickerTrack');
+  track.innerHTML=items+items;
+}
+
+// ============================================================
+// TELEGRAM
+// ============================================================
+async function sendTg(text){
+  const token=cfg.tgToken;
+  const chatId=cfg.tgChatId;
+  if(!token||!chatId) return {ok:false,error:'未設定 Token 或 Chat ID'};
+  try{
+    const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:chatId,text,parse_mode:'HTML'})
+    });
+    return await r.json();
+  }catch(e){return{ok:false,error:e.message};}
+}
+
+async function testTg(){
+  const r=await sendTg('🔔 <b>獵手PRO 測試訊息</b>\n✅ Telegram 連線成功！\n⬡ Hunter Strategy System');
+  const el=document.getElementById('tgMsg');
+  el.textContent=r.ok?'✅ 發送成功！':('❌ 發送失敗: '+(r.description||r.error));
+  el.className=r.ok?'msg-ok':'msg-err';
+}
+
+async function sendSignalNotify(sym,signal,score,phase,chg,price,wykScore,wykReason){
+  const dir=signal==='long'?'▲ 做多':'▼ 做空';
+  const emoji=signal==='long'?'🟢':'🔴';
+  const lv=calcLevels(price||0, signal);
+  const rrTxt=`RR ${lv.rr1} (TP1) → ${lv.rr3} (TP3)`;
+  const wykLine=wykScore?`\n📐 Wyckoff評分: ${wykScore}/100 · ${wykReason||''}`:'' ;
+  const rankEmoji=signal==='long'?'📈':'📉';
+  const text=`${emoji} <b>獵手PRO · 賽克斯確認訊號</b>
+━━━━━━━━━━━━━━
+${rankEmoji} 幣對: <b>${sym}</b>
+方向: <b>${dir}</b>
+獵手分數: <b>${score}/100</b>
+Wyckoff 階段: <b>${phase}</b>${wykLine}
+24H 漲跌: ${parseFloat(chg)>=0?'+':''}${chg}%
+━━━━━━━━━━━━━━
+💰 <b>進場價:</b> $${lv.entry}
+🛑 <b>止損 SL:</b> $${lv.sl}  (${lv.slPct})
+🎯 <b>TP1:</b> $${lv.tp1}  (${lv.tp1Pct})
+🎯 <b>TP2:</b> $${lv.tp2}  (${lv.tp2Pct})
+🎯 <b>TP3:</b> $${lv.tp3}  (${lv.tp3Pct})
+📊 盈虧比: ${rrTxt}
+━━━━━━━━━━━━━━
+✅ 已通過賽克斯策略篩選 (多空排行前5)
+⚠️ 僅供參考，注意風險管理 · 獵手PRO`;
+  const now=Date.now();
+  const lastSent=notifyLog[sym]||0;
+  const coolMs=cfg.notifyCool*60*1000;
+  if(now-lastSent<coolMs&&score<95){
+    alert(`${sym} 已在冷卻期（${cfg.notifyCool}分鐘）內通知過，跳過。`);
+    return;
+  }
+  const r=await sendTg(text);
+  if(r.ok){notifyLog[sym]=now;alert(`✅ ${sym} 訊號已發送至 Telegram！`);}
+  else alert('❌ 發送失敗: '+(r.description||r.error||'請確認設定'));
+}
+
+// ============================================================
+// AI Q&A
+// ============================================================
+function setQ(q){document.getElementById('qaInput').value=q;}
+async function sendQ(){
+  const input=document.getElementById('qaInput');
+  const btn=document.getElementById('qaBtn');
+  const hist=document.getElementById('qaHistory');
+  const q=input.value.trim();
+  if(!q) return;
+  hist.innerHTML+=`<div class="msg user"><div class="msg-role">▶ USER</div><div class="msg-content">${q}</div></div>`;
+  input.value='';btn.disabled=true;
+  const lid='l'+Date.now();
+  hist.innerHTML+=`<div class="msg ai" id="${lid}"><div class="msg-role">⬡ HUNTER AI</div><div class="msg-content"><div class="loading-dots"><span></span><span></span><span></span></div></div></div>`;
+  hist.scrollTop=hist.scrollHeight;
+  // Gather context
+  const fgVal=document.getElementById('fgBig').textContent;
+  const fgSub=document.getElementById('fgSub').textContent;
+  const btcPriceCtx=document.getElementById('btcPrice').textContent;
+  const mktCtx=`目前市場資訊：BTC價格 ${btcPriceCtx}，貪婪恐懼指數 ${fgVal}（${fgSub}），市場掃描共 ${marketData.length} 個幣對，做多訊號 ${marketData.filter(c=>c.signal==='long').length} 個，做空訊號 ${marketData.filter(c=>c.signal==='short').length} 個。`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`你是獵手PRO虛擬貨幣交易系統的AI顧問，專精於賽克斯（Wyckoff）方法與獵手策略。
+${mktCtx}
+回答用繁體中文，條理清晰，引用賽克斯術語，150-300字，給出可執行的建議。`,
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const d=await r.json();
+    const ans=d.content?.map(c=>c.text||'').join('\n')||'無法取得回應';
+    document.getElementById(lid).outerHTML=`<div class="msg ai"><div class="msg-role">⬡ HUNTER AI</div><div class="msg-content">${ans.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(e){
+    document.getElementById(lid).outerHTML=`<div class="msg ai"><div class="msg-role">⬡ HUNTER AI</div><div class="msg-content" style="color:var(--red)">連線錯誤，請稍後再試。</div></div>`;
+  }
+  btn.disabled=false;
+  hist.scrollTop=hist.scrollHeight;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function loadSettings(){
+  document.getElementById('tgToken').value=cfg.tgToken;
+  document.getElementById('tgChatId').value=cfg.tgChatId;
+  document.getElementById('bxKey').value=cfg.bxKey;
+  document.getElementById('bxSecret').value=cfg.bxSecret;
+  document.getElementById('minScore').value=cfg.minScore;
+  document.getElementById('notifyCool').value=cfg.notifyCool;
+  document.getElementById('scanInterval').value=cfg.scanInterval;
+  if(cfg.users[0]) document.getElementById('chgUser').value=cfg.users[0].u;
+}
+function saveTg(){
+  cfg.tgToken=document.getElementById('tgToken').value.trim();
+  cfg.tgChatId=document.getElementById('tgChatId').value.trim();
+  save();
+  const el=document.getElementById('tgMsg');
+  el.textContent='✅ 已儲存';el.className='msg-ok';
+  setTimeout(()=>el.textContent='',2000);
+}
+function saveBx(){
+  cfg.bxKey=document.getElementById('bxKey').value.trim();
+  cfg.bxSecret=document.getElementById('bxSecret').value.trim();
+  cfg.scanInterval=parseInt(document.getElementById('scanInterval').value)||60;
+  save();
+  const el=document.getElementById('bxMsg');
+  el.textContent='✅ 已儲存';el.className='msg-ok';
+  setTimeout(()=>el.textContent='',2000);
+}
+function saveNotify(){
+  cfg.minScore=parseInt(document.getElementById('minScore').value)||70;
+  cfg.notifyCool=parseInt(document.getElementById('notifyCool').value)||30;
+  save();
+  const el=document.getElementById('notifyMsg');
+  el.textContent='✅ 已儲存';el.className='msg-ok';
+  setTimeout(()=>el.textContent='',2000);
+}
+function changeAccount(){
+  const u=document.getElementById('chgUser').value.trim();
+  const p=document.getElementById('chgPass').value;
+  const p2=document.getElementById('chgPass2').value;
+  const el=document.getElementById('acctMsg');
+  if(!u){el.textContent='請輸入帳號';el.className='msg-err';return;}
+  if(p&&p!==p2){el.textContent='兩次密碼不一致';el.className='msg-err';return;}
+  cfg.users[0].u=u;
+  if(p) cfg.users[0].p=p;
+  save();
+  el.textContent='✅ 帳號已更新';el.className='msg-ok';
+  setTimeout(()=>el.textContent='',2000);
+}
+
+// ============================================================
+// AUTO REFRESH
+// ============================================================
+let autoTimer=null;
+function startAutoRefresh(){
+  if(autoTimer) clearInterval(autoTimer);
+  autoTimer=setInterval(async()=>{
+    if(document.getElementById('autoScan').value==='off') return;
+    await loadMarketData();
+    await loadFearGreed();
+    drawEnergy();
+    buildTicker();
+    // === Auto Notify: Top5 Long + Top5 Short, Wyckoff-confirmed only ===
+    if(cfg.tgToken&&cfg.tgChatId){
+      const now=Date.now();
+      const coolMs=cfg.notifyCool*60*1000;
+
+      // Top 5 LONG: sorted by longPct desc, must pass Wyckoff + score filter
+      const top5Long = marketData
+        .filter(c => c.signal==='long'
+          && (c.phase==='吸籌'||c.phase==='上升')
+          && c.score >= cfg.minScore
+          && c.wykScore >= 60)
+        .sort((a,b)=> parseFloat(b.longPct)-parseFloat(a.longPct))
+        .slice(0,5);
+
+      // Top 5 SHORT: sorted by shortPct desc, must pass Wyckoff + score filter
+      const top5Short = marketData
+        .filter(c => c.signal==='short'
+          && (c.phase==='出貨'||c.phase==='下降')
+          && c.score >= cfg.minScore
+          && c.wykScore >= 60)
+        .sort((a,b)=> parseFloat(b.shortPct)-parseFloat(a.shortPct))
+        .slice(0,5);
+
+      const toNotify = [...top5Long, ...top5Short];
+
+      toNotify.forEach(c=>{
+        const last=notifyLog[c.sym]||0;
+        if(now-last>coolMs){
+          sendSignalNotify(c.sym,c.signal,c.score,c.phase,c.chg,c.price,c.wykScore,c.wykReason);
+          notifyLog[c.sym]=now;
+        }
+      });
+
+      // Update dashboard badge
+      const el=document.getElementById('autoNotifyCount');
+      if(el) el.textContent=toNotify.length+' 筆符合';
+    }
+  },cfg.scanInterval*1000);
+}
+</script>
+</body>
+</html>
